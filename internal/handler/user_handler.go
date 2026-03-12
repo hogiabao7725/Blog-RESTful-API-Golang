@@ -23,12 +23,6 @@ func NewUserHandler(s domain.UserService) *UserHandler {
 
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
-	// Check METHOD
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
 	var req request.RegisterUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -65,4 +59,5 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: createdUser.CreatedAt,
 		},
 	})
+
 }
