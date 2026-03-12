@@ -1,0 +1,38 @@
+Role table {
+    id: integer [primary key]
+    name: string
+}
+
+User table {
+    id: integer [primary key]
+    name: string
+    username: string
+    email: string
+    password: string
+    role_id: integer [foreign key -> Role.id]
+}
+
+Category table {
+    id: integer [primary key]
+    name: string
+    description: string
+}
+
+Post table {
+    id: integer [primary key]
+    title: string
+    description: string
+    content: text
+    created_at: datetime
+    updated_at: datetime
+    user_id: integer [foreign key -> User.id]
+    category_id: integer [foreign key -> Category.id]
+}
+
+Comment table {
+    id: integer [primary key]
+    body: string
+    user_id: integer [foreign key -> User.id]
+    post_id: integer [foreign key -> Post.id]
+}
+
