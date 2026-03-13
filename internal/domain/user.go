@@ -17,12 +17,10 @@ type User struct {
 
 type UserRepository interface {
 	Create(ctx context.Context, user *User) (*User, error)
-	Get(ctx context.Context, id int64) (*User, error)
-	FindByEmail(ctx context.Context, email string) (*User, error)
-	Update(ctx context.Context, user *User) error
-	Delete(ctx context.Context, id int64) error
+	FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*User, error)
 }
 
 type UserService interface {
 	Register(ctx context.Context, user *User) (*User, error)
+	Login(ctx context.Context, username, password string) (*User, error)
 }

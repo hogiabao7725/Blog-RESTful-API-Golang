@@ -61,3 +61,37 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 
 }
+
+func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+
+	var req request.LoginUserRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	user, err := h.service.Login(r.Context(), req.UsernameOrEmail, req.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrInvalidCredentials):
+			utils.WriteError(w, http.StatusUnauthorized, "invalid username/email or password")
+		default:
+			utils.WriteError(w, http.StatusInternalServerError, "internal server error")
+		}
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, response.Response{
+		Success: true,
+		Message: "login successfully",
+		Data: response.UserResponse{
+			ID:        user.ID,
+			Name:      user.Name,
+			Username:  user.Username,
+			Email:     user.Email,
+			RoleID:    user.RoleID,
+			CreatedAt: user.CreatedAt,
+		},
+	})
+}

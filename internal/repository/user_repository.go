@@ -51,18 +51,23 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) (*domain
 	return user, nil
 }
 
-func (r *userRepository) Get(ctx context.Context, id int64) (*domain.User, error) {
-	return nil, nil
-}
-
-func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
-	return nil, nil
-}
-
-func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	return nil
-}
-
-func (r *userRepository) Delete(ctx context.Context, id int64) error {
-	return nil
+func (r *userRepository) FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*domain.User, error) {
+	query := `
+		SELECT id, name, username, email, password, role_id, created_at
+		FROM users
+		WHERE username = $1 OR email = $1
+	`
+	user := &domain.User{}
+	err := r.db.QueryRowContext(ctx, query, usernameOrEmail).Scan(
+		&user.ID, &user.Name, &user.Username, &user.Email,
+		&user.Password, &user.RoleID, &user.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// This will be used by logging, not use by service or handler, so we can provide more context for debugging.
+			return nil, fmt.Errorf("user with username or email '%s' not found: %w", usernameOrEmail, domain.ErrNotFound)
+		}
+		return nil, fmt.Errorf("db.user.findByUsernameOrEmail: %w", err)
+	}
+	return user, nil
 }

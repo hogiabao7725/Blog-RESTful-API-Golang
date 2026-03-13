@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
 )
@@ -22,7 +24,24 @@ func (s *userService) Register(ctx context.Context, user *domain.User) (*domain.
 	}
 	newUser, err := s.repo.Create(ctx, user)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("service.user.register: %w", err)
 	}
 	return newUser, nil
+}
+
+func (s *userService) Login(ctx context.Context, usernameOrEmail, password string) (*domain.User, error) {
+
+	user, err := s.repo.FindByUsernameOrEmail(ctx, usernameOrEmail)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return nil, domain.ErrInvalidCredentials
+		}
+		return nil, fmt.Errorf("service.user.login: %w", err)
+	}
+
+	if password != user.Password {
+		return nil, domain.ErrInvalidCredentials
+	}
+
+	return user, nil
 }

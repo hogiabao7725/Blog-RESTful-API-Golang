@@ -14,4 +14,6 @@ var (
 	ErrForbidden = errors.New("forbidden")
 
 	ErrInternal = errors.New("internal error")
+
+	ErrInvalidCredentials = errors.New("invalid credentials")
 )
