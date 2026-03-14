@@ -30,18 +30,22 @@ func main() {
 
 	// 1st floor repository
 	userRepo := repository.NewUserRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
 
 	// 2nd floor service
 	userService := service.NewUserService(userRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
 
 	// 3rd floor handler
 	userHandler := handler.NewUserHandler(userService)
-	
+	categoryHandler := handler.NewCategoryHandler(categoryService)
+
 	// mux
 	mux := http.NewServeMux()
 
 	// routes
 	routes.SetupUserRoutes(mux, userHandler)
+	routes.SetupCategoryRoutes(mux, categoryHandler)
 
 	// server
 	server := &http.Server{
