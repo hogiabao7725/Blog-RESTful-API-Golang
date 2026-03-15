@@ -7,6 +7,7 @@ import (
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/request"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/response"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/utils"
 )
 
@@ -23,7 +24,7 @@ func NewCategoryHandler(s domain.CategoryService) *CategoryHandler {
 func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req request.CreateCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -34,11 +35,11 @@ func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createdCategory, err := h.service.Create(r.Context(), category)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "internal server error")
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, response.Response{
+	response.WriteJSON(w, http.StatusCreated, response.Response{
 		Success: true,
 		Message: "create category successfully",
 		Data: response.CategoryResponse{
@@ -52,17 +53,17 @@ func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *CategoryHandler) FindByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ParseIDFromURL(r)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid category id")
+		errorx.WriteError(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
 
 	category, err := h.service.FindByID(r.Context(), id)
 	if err != nil {
-		utils.WriteError(w, http.StatusNotFound, "category not found")
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response.Response{
+	response.WriteJSON(w, http.StatusOK, response.Response{
 		Success: true,
 		Message: "get category successfully",
 		Data: response.CategoryResponse{
@@ -76,7 +77,7 @@ func (h *CategoryHandler) FindByID(w http.ResponseWriter, r *http.Request) {
 func (h *CategoryHandler) FindAll(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.service.FindAll(r.Context())
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "internal server error")
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
@@ -89,7 +90,7 @@ func (h *CategoryHandler) FindAll(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response.Response{
+	response.WriteJSON(w, http.StatusOK, response.Response{
 		Success: true,
 		Message: "get categories successfully",
 		Data:    categoryResponses,
@@ -99,13 +100,13 @@ func (h *CategoryHandler) FindAll(w http.ResponseWriter, r *http.Request) {
 func (h *CategoryHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ParseIDFromURL(r)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid category id")
+		errorx.WriteError(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
 
 	var req request.UpdateCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -117,11 +118,11 @@ func (h *CategoryHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	updatedCategory, err := h.service.Update(r.Context(), category)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "internal server error")
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response.Response{
+	response.WriteJSON(w, http.StatusOK, response.Response{
 		Success: true,
 		Message: "update category successfully",
 		Data: response.CategoryResponse{
@@ -135,17 +136,17 @@ func (h *CategoryHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *CategoryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ParseIDFromURL(r)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid category id")
+		errorx.WriteError(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
 
 	err = h.service.Delete(r.Context(), id)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "internal server error")
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response.Response{
+	response.WriteJSON(w, http.StatusOK, response.Response{
 		Success: true,
 		Message: "delete category successfully",
 	})

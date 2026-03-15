@@ -2,13 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/request"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/response"
-	"github.com/hogiabao7725/blog-rest-api-golang/internal/utils"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
 )
 
 type UserHandler struct {
@@ -25,7 +24,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var req request.RegisterUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -38,16 +37,11 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	createdUser, err := h.service.Register(r.Context(), user)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrAlreadyExists):
-			utils.WriteError(w, http.StatusConflict, err.Error())
-		default:
-			utils.WriteError(w, http.StatusInternalServerError, "internal server error")
-		}
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, response.Response{
+	response.WriteJSON(w, http.StatusCreated, response.Response{
 		Success: true,
 		Message: "register user successfully",
 		Data: response.UserResponse{
@@ -67,22 +61,17 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req request.LoginUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	user, err := h.service.Login(r.Context(), req.UsernameOrEmail, req.Password)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrInvalidCredentials):
-			utils.WriteError(w, http.StatusUnauthorized, "invalid username/email or password")
-		default:
-			utils.WriteError(w, http.StatusInternalServerError, "internal server error")
-		}
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response.Response{
+	response.WriteJSON(w, http.StatusOK, response.Response{
 		Success: true,
 		Message: "login successfully",
 		Data: response.UserResponse{

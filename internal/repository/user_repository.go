@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
 	"github.com/lib/pq"
 )
 
@@ -37,11 +38,11 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) (*domain
 			// case "table_column_key":
 			// 	return nil, fmt.Errorf("value '%s' already exists: %w", value, domain.ErrAlreadyExists)
 			case "users_email_key":
-				return nil, fmt.Errorf("email '%s' already registered: %w", user.Email, domain.ErrAlreadyExists)
+				return nil, errorx.NewAlreadyExistsError("user", "email", user.Email)
 			case "users_username_key":
-				return nil, fmt.Errorf("username '%s' is taken: %w", user.Username, domain.ErrAlreadyExists)
+				return nil, errorx.NewAlreadyExistsError("user", "username", user.Username)
 			default:
-				return nil, fmt.Errorf("conflict on %s: %w", pgErr.Constraint, domain.ErrAlreadyExists)
+				return nil, errorx.NewAlreadyExistsError("user", "constraint", pgErr.Constraint)
 			}
 		}
 		// Always use %w to retain the original error trace stack from the database for debugging (logging).
@@ -65,7 +66,7 @@ func (r *userRepository) FindByUsernameOrEmail(ctx context.Context, usernameOrEm
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// This will be used by logging, not use by service or handler, so we can provide more context for debugging.
-			return nil, fmt.Errorf("user with username or email '%s' not found: %w", usernameOrEmail, domain.ErrNotFound)
+			return nil, errorx.NewNotFoundError("user", "username OR email", usernameOrEmail)
 		}
 		return nil, fmt.Errorf("db.user.findByUsernameOrEmail: %w", err)
 	}

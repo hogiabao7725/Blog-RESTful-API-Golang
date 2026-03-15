@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
 )
 
 type userService struct {
@@ -33,14 +33,14 @@ func (s *userService) Login(ctx context.Context, usernameOrEmail, password strin
 
 	user, err := s.repo.FindByUsernameOrEmail(ctx, usernameOrEmail)
 	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
-			return nil, domain.ErrInvalidCredentials
+		if errorx.IsNotFound(err) {
+			return nil, errorx.NewInvalidCredentialsError()
 		}
 		return nil, fmt.Errorf("service.user.login: %w", err)
 	}
 
 	if password != user.Password {
-		return nil, domain.ErrInvalidCredentials
+		return nil, errorx.NewInvalidCredentialsError()
 	}
 
 	return user, nil

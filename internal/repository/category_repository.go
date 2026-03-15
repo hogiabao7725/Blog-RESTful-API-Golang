@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
 	"github.com/lib/pq"
 )
 
@@ -31,10 +32,10 @@ func (r *categoryRepository) Create(ctx context.Context, category *domain.Catego
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			switch pgErr.Constraint {
-			case "categories_name_key":
-				return nil, fmt.Errorf("category name '%s' already exists: %w", category.Name, domain.ErrAlreadyExists)
+			case "categories_name_unique":
+				return nil, errorx.NewAlreadyExistsError("category", "name", category.Name)
 			default:
-				return nil, fmt.Errorf("conflict on %s: %w", pgErr.Constraint, domain.ErrAlreadyExists)
+				return nil, errorx.NewAlreadyExistsError("category", "constraint", pgErr.Constraint)
 			}
 		}
 		return nil, fmt.Errorf("db.category.create: %w", err)
@@ -52,7 +53,7 @@ func (r *categoryRepository) FindByID(ctx context.Context, id int64) (*domain.Ca
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&category.ID, &category.Name, &category.Description)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("category not found: %w", domain.ErrNotFound)
+			return nil, errorx.NewNotFoundError("category", "id", id)
 		}
 		return nil, fmt.Errorf("db.category.find_by_id: %w", err)
 	}
@@ -63,6 +64,7 @@ func (r *categoryRepository) FindAll(ctx context.Context) ([]*domain.Category, e
 	query := `
 		SELECT id, name, description
 		FROM categories
+		ORDER BY id ASC
 	`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -94,10 +96,10 @@ func (r *categoryRepository) Update(ctx context.Context, category *domain.Catego
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			switch pgErr.Constraint {
-			case "categories_name_key":
-				return nil, fmt.Errorf("category name '%s' already exists: %w", category.Name, domain.ErrAlreadyExists)
+			case "categories_name_unique":
+				return nil, errorx.NewAlreadyExistsError("category", "name", category.Name)
 			default:
-				return nil, fmt.Errorf("conflict on %s: %w", pgErr.Constraint, domain.ErrAlreadyExists)
+				return nil, errorx.NewAlreadyExistsError("category", "constraint", pgErr.Constraint)
 			}
 		}
 		return nil, fmt.Errorf("db.category.update: %w", err)
@@ -119,7 +121,7 @@ func (r *categoryRepository) Delete(ctx context.Context, id int64) error {
 		return fmt.Errorf("db.category.delete: %w", err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("category not found: %w", domain.ErrNotFound)
+		return errorx.NewNotFoundError("category", "id", id)
 	}
 	return nil
 }
