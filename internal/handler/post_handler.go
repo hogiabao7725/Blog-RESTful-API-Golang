@@ -12,14 +12,12 @@ import (
 )
 
 type PostHandler struct {
-	service         domain.PostService
-	categoryService domain.CategoryService
+	service domain.PostService
 }
 
-func NewPostHandler(postService domain.PostService, categoryService domain.CategoryService) *PostHandler {
+func NewPostHandler(postService domain.PostService) *PostHandler {
 	return &PostHandler{
-		service:         postService,
-		categoryService: categoryService,
+		service: postService,
 	}
 }
 
@@ -96,12 +94,6 @@ func (h *PostHandler) FindByCategoryID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := h.categoryService.FindByID(r.Context(), categoryID)
-	if err != nil {
-		errorx.WriteDomainError(w, err)
-		return
-	}
-
 	posts, err := h.service.FindByCategoryID(r.Context(), categoryID)
 	if err != nil {
 		errorx.WriteDomainError(w, err)
@@ -113,22 +105,10 @@ func (h *PostHandler) FindByCategoryID(w http.ResponseWriter, r *http.Request) {
 		postResponses = append(postResponses, toPostResponse(post))
 	}
 
-	resp := struct {
-		Category response.CategoryResponse `json:"category"`
-		Posts    []response.PostResponse   `json:"posts"`
-	}{
-		Category: response.CategoryResponse{
-			ID:          category.ID,
-			Name:        category.Name,
-			Description: category.Description,
-		},
-		Posts: postResponses,
-	}
-
 	response.WriteJSON(w, http.StatusOK, response.Response{
 		Success: true,
 		Message: "get posts by category successfully",
-		Data:    resp,
+		Data:    postResponses,
 	})
 }
 

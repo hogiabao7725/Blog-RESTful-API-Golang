@@ -5,19 +5,29 @@ import (
 	"fmt"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
 )
 
 type postService struct {
-	repo domain.PostRepository
+	repo         domain.PostRepository
+	categoryRepo domain.CategoryRepository
 }
 
-func NewPostService(repo domain.PostRepository) domain.PostService {
+func NewPostService(repo domain.PostRepository, categoryRepo domain.CategoryRepository) domain.PostService {
 	return &postService{
-		repo: repo,
+		repo:         repo,
+		categoryRepo: categoryRepo,
 	}
 }
 
 func (s *postService) Create(ctx context.Context, post *domain.Post) (*domain.Post, error) {
+	if post.CategoryID <= 0 {
+		return nil, errorx.NewInvalidInputError("category_id", "must be greater than 0")
+	}
+	if _, err := s.categoryRepo.FindByID(ctx, post.CategoryID); err != nil {
+		return nil, fmt.Errorf("service.post.create.validate_category: %w", err)
+	}
+
 	newPost, err := s.repo.Create(ctx, post)
 	if err != nil {
 		return nil, fmt.Errorf("service.post.create: %w", err)
@@ -50,6 +60,13 @@ func (s *postService) FindByCategoryID(ctx context.Context, categoryID int64) ([
 }
 
 func (s *postService) Update(ctx context.Context, post *domain.Post) (*domain.Post, error) {
+	if post.CategoryID <= 0 {
+		return nil, errorx.NewInvalidInputError("category_id", "must be greater than 0")
+	}
+	if _, err := s.categoryRepo.FindByID(ctx, post.CategoryID); err != nil {
+		return nil, fmt.Errorf("service.post.update.validate_category: %w", err)
+	}
+
 	updatedPost, err := s.repo.Update(ctx, post)
 	if err != nil {
 		return nil, fmt.Errorf("service.post.update: %w", err)
