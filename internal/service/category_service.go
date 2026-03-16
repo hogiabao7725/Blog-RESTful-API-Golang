@@ -41,10 +41,6 @@ func (s *categoryService) FindAll(ctx context.Context) ([]*domain.Category, erro
 }
 
 func (s *categoryService) Update(ctx context.Context, category *domain.Category) (*domain.Category, error) {
-	_, err := s.repo.FindByID(ctx, category.ID)
-	if err != nil {
-		return nil, fmt.Errorf("service.category.update: %w", err)
-	}
 	updatedCategory, err := s.repo.Update(ctx, category)
 	if err != nil {
 		return nil, fmt.Errorf("service.category.update: %w", err)
@@ -53,12 +49,7 @@ func (s *categoryService) Update(ctx context.Context, category *domain.Category)
 }
 
 func (s *categoryService) Delete(ctx context.Context, id int64) error {
-	_, err := s.repo.FindByID(ctx, id)
-	if err != nil {
-		return fmt.Errorf("service.category.delete: %w", err)
-	}
-	err = s.repo.Delete(ctx, id)
-	if err != nil {
+	if err := s.repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("service.category.delete: %w", err)
 	}
 	return nil

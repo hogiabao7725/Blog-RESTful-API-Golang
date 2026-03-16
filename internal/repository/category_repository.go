@@ -93,6 +93,9 @@ func (r *categoryRepository) Update(ctx context.Context, category *domain.Catego
 	`
 	err := r.db.QueryRowContext(ctx, query, category.Name, category.Description, category.ID).Scan(&category.ID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errorx.NewNotFoundError("category", "id", category.ID)
+		}
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			switch pgErr.Constraint {
