@@ -27,6 +27,12 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
 
 	user := &domain.User{
 		Name:     req.Name,
@@ -62,6 +68,12 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
