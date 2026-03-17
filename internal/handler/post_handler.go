@@ -22,11 +22,20 @@ func NewPostHandler(postService domain.PostService) *PostHandler {
 }
 
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
+
 	var req request.PostRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
 	post := &domain.Post{
 		Title:       req.Title,
 		Description: req.Description,
@@ -120,8 +129,15 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req request.PostRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
