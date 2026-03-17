@@ -22,9 +22,16 @@ func NewCategoryHandler(s domain.CategoryService) *CategoryHandler {
 }
 
 func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var req request.CreateCategoryRequest
+	var req request.CategoryRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
@@ -104,9 +111,15 @@ func (h *CategoryHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req request.UpdateCategoryRequest
+	var req request.CategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
