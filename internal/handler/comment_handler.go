@@ -27,8 +27,15 @@ func (h *CommentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req request.CreateCommentRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
@@ -106,6 +113,12 @@ func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req request.UpdateCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.Normalize()
+
+	if err := req.Validate(); err != nil {
+		errorx.WriteDomainError(w, err)
 		return
 	}
 
