@@ -6,6 +6,7 @@ import (
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type userService struct {
@@ -22,6 +23,13 @@ func (s *userService) Register(ctx context.Context, user *domain.User) (*domain.
 	if user.RoleID == 0 {
 		user.RoleID = 2 // Default to "user" role if not specified.
 	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("service.user.register.hash_password: %w", err)
+	}
+	user.Password = string(hashedPassword)
+
 	newUser, err := s.repo.Create(ctx, user)
 	if err != nil {
 		return nil, fmt.Errorf("service.user.register: %w", err)
@@ -39,7 +47,7 @@ func (s *userService) Login(ctx context.Context, usernameOrEmail, password strin
 		return nil, fmt.Errorf("service.user.login: %w", err)
 	}
 
-	if password != user.Password {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return nil, errorx.NewInvalidCredentialsError()
 	}
 
