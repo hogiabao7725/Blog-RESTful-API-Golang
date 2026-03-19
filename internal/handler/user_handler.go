@@ -8,15 +8,18 @@ import (
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/request"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/response"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/utils"
 )
 
 type UserHandler struct {
-	service domain.UserService
+	service   domain.UserService
+	jwtSecret string
 }
 
-func NewUserHandler(s domain.UserService) *UserHandler {
+func NewUserHandler(s domain.UserService, jwtSecret string) *UserHandler {
 	return &UserHandler{
-		service: s,
+		service:   s,
+		jwtSecret: jwtSecret,
 	}
 }
 
@@ -83,16 +86,25 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, err := utils.GenerateAccessToken(h.jwtSecret, user.ID, user.RoleID)
+	if err != nil {
+		errorx.WriteError(w, http.StatusInternalServerError, "failed to generate access token")
+		return
+	}
+
 	response.WriteJSON(w, http.StatusOK, response.Response{
 		Success: true,
 		Message: "login successfully",
-		Data: response.UserResponse{
-			ID:        user.ID,
-			Name:      user.Name,
-			Username:  user.Username,
-			Email:     user.Email,
-			RoleID:    user.RoleID,
-			CreatedAt: user.CreatedAt,
+		Data: response.LoginResponse{
+			AccessToken: accessToken,
+			User: response.UserResponse{
+				ID:        user.ID,
+				Name:      user.Name,
+				Username:  user.Username,
+				Email:     user.Email,
+				RoleID:    user.RoleID,
+				CreatedAt: user.CreatedAt,
+			},
 		},
 	})
 }

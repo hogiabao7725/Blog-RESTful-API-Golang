@@ -8,6 +8,7 @@ import (
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/config"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/database"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/handler"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/middleware"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/repository"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/routes"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/service"
@@ -41,19 +42,20 @@ func main() {
 	commentService := service.NewCommentService(commentRepo, postRepo)
 
 	// 3rd floor handler
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(userService, cfg.JWTSecret)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 	postHandler := handler.NewPostHandler(postService)
 	commentHandler := handler.NewCommentHandler(commentService)
+	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 
 	// mux
 	mux := http.NewServeMux()
 
 	// routes
 	routes.SetupUserRoutes(mux, userHandler)
-	routes.SetupCategoryRoutes(mux, categoryHandler)
-	routes.SetupPostRoutes(mux, postHandler)
-	routes.SetupCommentRoutes(mux, commentHandler)
+	routes.SetupCategoryRoutes(mux, categoryHandler, authMiddleware)
+	routes.SetupPostRoutes(mux, postHandler, authMiddleware)
+	routes.SetupCommentRoutes(mux, commentHandler, authMiddleware)
 
 	// server
 	server := &http.Server{

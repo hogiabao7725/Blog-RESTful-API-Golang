@@ -10,3 +10,8 @@ type UserResponse struct {
 	RoleID    int64     `json:"role_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type LoginResponse struct {
+	AccessToken string       `json:"access_token"`
+	User        UserResponse `json:"user"`
+}
