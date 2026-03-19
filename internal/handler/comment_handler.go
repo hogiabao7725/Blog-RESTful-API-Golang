@@ -8,6 +8,7 @@ import (
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/request"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/response"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/middleware"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/utils"
 )
 
@@ -20,6 +21,12 @@ func NewCommentHandler(service domain.CommentService) *CommentHandler {
 }
 
 func (h *CommentHandler) Create(w http.ResponseWriter, r *http.Request) {
+	authUserID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	postID, err := utils.ParsePathID(r, "post_id")
 	if err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid post id")
@@ -41,7 +48,7 @@ func (h *CommentHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	comment := &domain.Comment{
 		Body:   req.Body,
-		UserID: req.UserID,
+		UserID: authUserID,
 		PostID: postID,
 	}
 
@@ -104,9 +111,31 @@ func (h *CommentHandler) FindByPostID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
+	authUserID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	authRoleID, ok := middleware.RoleIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	id, err := utils.ParseIDFromURL(r)
 	if err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid comment id")
+		return
+	}
+
+	existingComment, err := h.service.FindByID(r.Context(), id)
+	if err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
+	if authRoleID != middleware.RoleAdminID && existingComment.UserID != authUserID {
+		errorx.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
 
@@ -123,8 +152,10 @@ func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	comment := &domain.Comment{
-		ID:   id,
-		Body: req.Body,
+		ID:     id,
+		Body:   req.Body,
+		UserID: existingComment.UserID,
+		PostID: existingComment.PostID,
 	}
 
 	updatedComment, err := h.service.Update(r.Context(), comment)
@@ -141,9 +172,31 @@ func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CommentHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	authUserID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	authRoleID, ok := middleware.RoleIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	id, err := utils.ParseIDFromURL(r)
 	if err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid comment id")
+		return
+	}
+
+	existingComment, err := h.service.FindByID(r.Context(), id)
+	if err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
+	if authRoleID != middleware.RoleAdminID && existingComment.UserID != authUserID {
+		errorx.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
 

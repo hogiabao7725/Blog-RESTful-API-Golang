@@ -10,7 +10,6 @@ type PostRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Content     string `json:"content"`
-	UserID      int64  `json:"user_id"`
 	CategoryID  int64  `json:"category_id"`
 }
 
@@ -32,9 +31,6 @@ func (r *PostRequest) Validate() error {
 	}
 	if len(r.Content) == 0 {
 		return errorx.NewInvalidInputError("content", "is required")
-	}
-	if r.UserID <= 0 {
-		return errorx.NewInvalidInputError("user_id", "must be a positive integer")
 	}
 	if r.CategoryID <= 0 {
 		return errorx.NewInvalidInputError("category_id", "must be a positive integer")

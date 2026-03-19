@@ -8,6 +8,7 @@ import (
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/request"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/response"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/middleware"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/utils"
 )
 
@@ -22,6 +23,11 @@ func NewPostHandler(postService domain.PostService) *PostHandler {
 }
 
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
+	authUserID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 
 	var req request.PostRequest
 
@@ -40,7 +46,7 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Content:     req.Content,
-		UserID:      req.UserID,
+		UserID:      authUserID,
 		CategoryID:  req.CategoryID,
 	}
 
@@ -122,9 +128,31 @@ func (h *PostHandler) FindByCategoryID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
+	authUserID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	authRoleID, ok := middleware.RoleIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	id, err := utils.ParseIDFromURL(r)
 	if err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid post id")
+		return
+	}
+
+	existingPost, err := h.service.FindByID(r.Context(), id)
+	if err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
+	if authRoleID != middleware.RoleAdminID && existingPost.UserID != authUserID {
+		errorx.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
 
@@ -146,7 +174,7 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Content:     req.Content,
-		UserID:      req.UserID,
+		UserID:      existingPost.UserID,
 		CategoryID:  req.CategoryID,
 	}
 
@@ -164,9 +192,31 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	authUserID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	authRoleID, ok := middleware.RoleIDFromContext(r.Context())
+	if !ok {
+		errorx.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	id, err := utils.ParseIDFromURL(r)
 	if err != nil {
 		errorx.WriteError(w, http.StatusBadRequest, "invalid post id")
+		return
+	}
+
+	existingPost, err := h.service.FindByID(r.Context(), id)
+	if err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
+	if authRoleID != middleware.RoleAdminID && existingPost.UserID != authUserID {
+		errorx.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
 

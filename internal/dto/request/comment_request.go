@@ -7,8 +7,7 @@ import (
 )
 
 type CreateCommentRequest struct {
-	Body   string `json:"body"`
-	UserID int64  `json:"user_id"`
+	Body string `json:"body"`
 }
 
 type UpdateCommentRequest struct {
@@ -22,9 +21,6 @@ func (r *CreateCommentRequest) Normalize() {
 func (r *CreateCommentRequest) Validate() error {
 	if len(r.Body) == 0 {
 		return errorx.NewInvalidInputError("body", "is required")
-	}
-	if r.UserID <= 0 {
-		return errorx.NewInvalidInputError("user_id", "must be a positive integer")
 	}
 	return nil
 }
