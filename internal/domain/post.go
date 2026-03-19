@@ -21,6 +21,7 @@ type PostRepository interface {
 	FindByID(ctx context.Context, id int64) (*Post, error)
 	FindAll(ctx context.Context) ([]*Post, error)
 	FindByCategoryID(ctx context.Context, categoryID int64) ([]*Post, error)
+	Search(ctx context.Context, query string) ([]*Post, error)
 	Update(ctx context.Context, post *Post) (*Post, error)
 	Delete(ctx context.Context, id int64) error
 }
@@ -30,6 +31,7 @@ type PostService interface {
 	FindByID(ctx context.Context, id int64) (*Post, error)
 	FindAll(ctx context.Context) ([]*Post, error)
 	FindByCategoryID(ctx context.Context, categoryID int64) ([]*Post, error)
+	Search(ctx context.Context, query string) ([]*Post, error)
 	Update(ctx context.Context, post *Post) (*Post, error)
 	Delete(ctx context.Context, id int64) error
 }

@@ -138,6 +138,44 @@ func (r *postRepository) FindByCategoryID(ctx context.Context, categoryID int64)
 	return posts, nil
 }
 
+func (r *postRepository) Search(ctx context.Context, query string) ([]*domain.Post, error) {
+	searchPattern := "%" + query + "%"
+	q := `
+		SELECT id, title, description, content, user_id, category_id, created_at, updated_at
+		FROM posts
+		WHERE title ILIKE $1 OR description ILIKE $1 OR content ILIKE $1
+		ORDER BY id ASC
+	`
+	rows, err := r.db.QueryContext(ctx, q, searchPattern)
+	if err != nil {
+		return nil, fmt.Errorf("db.post.search: %w", err)
+	}
+	defer rows.Close()
+
+	var posts []*domain.Post
+	for rows.Next() {
+		post := &domain.Post{}
+		err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Description,
+			&post.Content,
+			&post.UserID,
+			&post.CategoryID,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("db.post.search.scan: %w", err)
+		}
+		posts = append(posts, post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("db.post.search.rows: %w", err)
+	}
+	return posts, nil
+}
+
 func (r *postRepository) Update(ctx context.Context, post *domain.Post) (*domain.Post, error) {
 	query := `
 		UPDATE posts

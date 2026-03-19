@@ -59,6 +59,14 @@ func (s *postService) FindByCategoryID(ctx context.Context, categoryID int64) ([
 	return posts, nil
 }
 
+func (s *postService) Search(ctx context.Context, query string) ([]*domain.Post, error) {
+	posts, err := s.repo.Search(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("service.post.search: %w", err)
+	}
+	return posts, nil
+}
+
 func (s *postService) Update(ctx context.Context, post *domain.Post) (*domain.Post, error) {
 	if post.CategoryID <= 0 {
 		return nil, errorx.NewInvalidInputError("category_id", "must be greater than 0")

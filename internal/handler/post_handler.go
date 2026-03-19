@@ -84,7 +84,20 @@ func (h *PostHandler) FindByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostHandler) FindAll(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.service.FindAll(r.Context())
+	// Check for search query parameter
+	query := r.URL.Query().Get("query")
+
+	var posts []*domain.Post
+	var err error
+
+	if query != "" {
+		// If query parameter is provided, perform search
+		posts, err = h.service.Search(r.Context(), query)
+	} else {
+		// Otherwise, return all posts
+		posts, err = h.service.FindAll(r.Context())
+	}
+
 	if err != nil {
 		errorx.WriteDomainError(w, err)
 		return
