@@ -218,3 +218,160 @@ func (r *postRepository) Delete(ctx context.Context, id int64) error {
 	}
 	return nil
 }
+
+func (r *postRepository) FindAllPaginated(ctx context.Context, offset, limit int) (*domain.PaginatedPosts, error) {
+	// Get total count
+	countQuery := `SELECT COUNT(*) FROM posts`
+	var total int64
+	err := r.db.QueryRowContext(ctx, countQuery).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("db.post.find_all_paginated.count: %w", err)
+	}
+
+	// Get paginated data
+	query := `
+		SELECT id, title, description, content, user_id, category_id, created_at, updated_at
+		FROM posts
+		ORDER BY id DESC
+		LIMIT $1 OFFSET $2
+	`
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("db.post.find_all_paginated: %w", err)
+	}
+	defer rows.Close()
+
+	var posts []*domain.Post
+	for rows.Next() {
+		post := &domain.Post{}
+		err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Description,
+			&post.Content,
+			&post.UserID,
+			&post.CategoryID,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("db.post.find_all_paginated.scan: %w", err)
+		}
+		posts = append(posts, post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("db.post.find_all_paginated.rows: %w", err)
+	}
+
+	return &domain.PaginatedPosts{
+		Posts: posts,
+		Total: total,
+	}, nil
+}
+
+func (r *postRepository) FindByCategoryIDPaginated(ctx context.Context, categoryID int64, offset, limit int) (*domain.PaginatedPosts, error) {
+	// Get total count
+	countQuery := `SELECT COUNT(*) FROM posts WHERE category_id = $1`
+	var total int64
+	err := r.db.QueryRowContext(ctx, countQuery, categoryID).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("db.post.find_by_category_id_paginated.count: %w", err)
+	}
+
+	// Get paginated data
+	query := `
+		SELECT id, title, description, content, user_id, category_id, created_at, updated_at
+		FROM posts
+		WHERE category_id = $1
+		ORDER BY id DESC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.db.QueryContext(ctx, query, categoryID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("db.post.find_by_category_id_paginated: %w", err)
+	}
+	defer rows.Close()
+
+	var posts []*domain.Post
+	for rows.Next() {
+		post := &domain.Post{}
+		err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Description,
+			&post.Content,
+			&post.UserID,
+			&post.CategoryID,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("db.post.find_by_category_id_paginated.scan: %w", err)
+		}
+		posts = append(posts, post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("db.post.find_by_category_id_paginated.rows: %w", err)
+	}
+
+	return &domain.PaginatedPosts{
+		Posts: posts,
+		Total: total,
+	}, nil
+}
+
+func (r *postRepository) SearchPaginated(ctx context.Context, query string, offset, limit int) (*domain.PaginatedPosts, error) {
+	searchPattern := "%" + query + "%"
+
+	// Get total count
+	countQuery := `
+		SELECT COUNT(*) FROM posts
+		WHERE title ILIKE $1 OR description ILIKE $1 OR content ILIKE $1
+	`
+	var total int64
+	err := r.db.QueryRowContext(ctx, countQuery, searchPattern).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("db.post.search_paginated.count: %w", err)
+	}
+
+	// Get paginated data
+	q := `
+		SELECT id, title, description, content, user_id, category_id, created_at, updated_at
+		FROM posts
+		WHERE title ILIKE $1 OR description ILIKE $1 OR content ILIKE $1
+		ORDER BY id DESC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.db.QueryContext(ctx, q, searchPattern, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("db.post.search_paginated: %w", err)
+	}
+	defer rows.Close()
+
+	var posts []*domain.Post
+	for rows.Next() {
+		post := &domain.Post{}
+		err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Description,
+			&post.Content,
+			&post.UserID,
+			&post.CategoryID,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("db.post.search_paginated.scan: %w", err)
+		}
+		posts = append(posts, post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("db.post.search_paginated.rows: %w", err)
+	}
+
+	return &domain.PaginatedPosts{
+		Posts: posts,
+		Total: total,
+	}, nil
+}

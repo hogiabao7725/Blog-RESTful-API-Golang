@@ -88,3 +88,27 @@ func (s *postService) Delete(ctx context.Context, id int64) error {
 	}
 	return nil
 }
+
+func (s *postService) FindAllPaginated(ctx context.Context, offset, limit int) (*domain.PaginatedPosts, error) {
+	paginated, err := s.repo.FindAllPaginated(ctx, offset, limit)
+	if err != nil {
+		return nil, fmt.Errorf("service.post.find_all_paginated: %w", err)
+	}
+	return paginated, nil
+}
+
+func (s *postService) FindByCategoryIDPaginated(ctx context.Context, categoryID int64, offset, limit int) (*domain.PaginatedPosts, error) {
+	paginated, err := s.repo.FindByCategoryIDPaginated(ctx, categoryID, offset, limit)
+	if err != nil {
+		return nil, fmt.Errorf("service.post.find_by_category_id_paginated: %w", err)
+	}
+	return paginated, nil
+}
+
+func (s *postService) SearchPaginated(ctx context.Context, query string, offset, limit int) (*domain.PaginatedPosts, error) {
+	paginated, err := s.repo.SearchPaginated(ctx, query, offset, limit)
+	if err != nil {
+		return nil, fmt.Errorf("service.post.search_paginated: %w", err)
+	}
+	return paginated, nil
+}
