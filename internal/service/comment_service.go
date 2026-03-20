@@ -84,3 +84,15 @@ func (s *commentService) Delete(ctx context.Context, id int64) error {
 	}
 	return nil
 }
+
+func (s *commentService) FindByPostIDPaginated(ctx context.Context, postID int64, offset, limit int) (*domain.PaginatedComments, error) {
+	if _, err := s.postRepo.FindByID(ctx, postID); err != nil {
+		return nil, fmt.Errorf("service.comment.find_by_post_id_paginated.validate_post: %w", err)
+	}
+
+	paginated, err := s.repo.FindByPostIDPaginated(ctx, postID, offset, limit)
+	if err != nil {
+		return nil, fmt.Errorf("service.comment.find_by_post_id_paginated: %w", err)
+	}
+	return paginated, nil
+}

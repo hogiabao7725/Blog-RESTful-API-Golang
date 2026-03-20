@@ -139,3 +139,53 @@ func (r *commentRepository) Delete(ctx context.Context, id int64) error {
 
 	return nil
 }
+
+func (r *commentRepository) FindByPostIDPaginated(ctx context.Context, postID int64, offset, limit int) (*domain.PaginatedComments, error) {
+	// Get total count
+	countQuery := `SELECT COUNT(*) FROM comments WHERE post_id = $1`
+	var total int64
+	err := r.db.QueryRowContext(ctx, countQuery, postID).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("db.comment.find_by_post_id_paginated.count: %w", err)
+	}
+
+	// Get paginated data
+	query := `
+		SELECT id, body, user_id, post_id, created_at
+		FROM comments
+		WHERE post_id = $1
+		ORDER BY id DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, postID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("db.comment.find_by_post_id_paginated: %w", err)
+	}
+	defer rows.Close()
+
+	var comments []*domain.Comment
+	for rows.Next() {
+		comment := &domain.Comment{}
+		err := rows.Scan(
+			&comment.ID,
+			&comment.Body,
+			&comment.UserID,
+			&comment.PostID,
+			&comment.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("db.comment.find_by_post_id_paginated.scan: %w", err)
+		}
+		comments = append(comments, comment)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("db.comment.find_by_post_id_paginated.rows: %w", err)
+	}
+
+	return &domain.PaginatedComments{
+		Comments: comments,
+		Total:    total,
+	}, nil
+}
