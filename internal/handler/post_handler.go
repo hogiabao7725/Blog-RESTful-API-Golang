@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/request"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/response"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
@@ -84,18 +85,24 @@ func (h *PostHandler) FindByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PostHandler) FindAll(w http.ResponseWriter, r *http.Request) {
+	// Parse pagination parameters
+	pagination, err := utils.ParsePagination(r)
+	if err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
 	// Check for search query parameter
 	query := r.URL.Query().Get("query")
 
-	var posts []*domain.Post
-	var err error
+	var paginated *domain.PaginatedPosts
 
 	if query != "" {
-		// If query parameter is provided, perform search
-		posts, err = h.service.Search(r.Context(), query)
+		// If query parameter is provided, perform search with pagination
+		paginated, err = h.service.SearchPaginated(r.Context(), query, pagination.GetOffset(), pagination.Limit)
 	} else {
-		// Otherwise, return all posts
-		posts, err = h.service.FindAll(r.Context())
+		// Otherwise, return all posts with pagination
+		paginated, err = h.service.FindAllPaginated(r.Context(), pagination.GetOffset(), pagination.Limit)
 	}
 
 	if err != nil {
@@ -104,14 +111,17 @@ func (h *PostHandler) FindAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var postResponses []response.PostResponse
-	for _, post := range posts {
+	for _, post := range paginated.Posts {
 		postResponses = append(postResponses, toPostResponse(post))
 	}
 
-	response.WriteJSON(w, http.StatusOK, response.Response{
+	paginationMeta := dto.NewPaginationMeta(pagination.Page, pagination.Limit, paginated.Total)
+
+	response.WriteJSON(w, http.StatusOK, response.PaginatedResponse{
 		Success: true,
 		Message: "get posts successfully",
 		Data:    postResponses,
+		Meta:    paginationMeta,
 	})
 }
 
@@ -122,21 +132,31 @@ func (h *PostHandler) FindByCategoryID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := h.service.FindByCategoryID(r.Context(), categoryID)
+	// Parse pagination parameters
+	pagination, err := utils.ParsePagination(r)
+	if err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
+	paginated, err := h.service.FindByCategoryIDPaginated(r.Context(), categoryID, pagination.GetOffset(), pagination.Limit)
 	if err != nil {
 		errorx.WriteDomainError(w, err)
 		return
 	}
 
 	var postResponses []response.PostResponse
-	for _, post := range posts {
+	for _, post := range paginated.Posts {
 		postResponses = append(postResponses, toPostResponse(post))
 	}
 
-	response.WriteJSON(w, http.StatusOK, response.Response{
+	paginationMeta := dto.NewPaginationMeta(pagination.Page, pagination.Limit, paginated.Total)
+
+	response.WriteJSON(w, http.StatusOK, response.PaginatedResponse{
 		Success: true,
 		Message: "get posts by category successfully",
 		Data:    postResponses,
+		Meta:    paginationMeta,
 	})
 }
 

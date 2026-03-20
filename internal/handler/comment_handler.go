@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/domain"
+	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/request"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/dto/response"
 	"github.com/hogiabao7725/blog-rest-api-golang/internal/errorx"
@@ -92,21 +93,31 @@ func (h *CommentHandler) FindByPostID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	comments, err := h.service.FindByPostID(r.Context(), postID)
+	// Parse pagination parameters
+	pagination, err := utils.ParsePagination(r)
+	if err != nil {
+		errorx.WriteDomainError(w, err)
+		return
+	}
+
+	paginated, err := h.service.FindByPostIDPaginated(r.Context(), postID, pagination.GetOffset(), pagination.Limit)
 	if err != nil {
 		errorx.WriteDomainError(w, err)
 		return
 	}
 
 	var commentResponses []response.CommentResponse
-	for _, comment := range comments {
+	for _, comment := range paginated.Comments {
 		commentResponses = append(commentResponses, toCommentResponse(comment))
 	}
 
-	response.WriteJSON(w, http.StatusOK, response.Response{
+	paginationMeta := dto.NewPaginationMeta(pagination.Page, pagination.Limit, paginated.Total)
+
+	response.WriteJSON(w, http.StatusOK, response.PaginatedResponse{
 		Success: true,
 		Message: "get comments by post successfully",
 		Data:    commentResponses,
+		Meta:    paginationMeta,
 	})
 }
 
