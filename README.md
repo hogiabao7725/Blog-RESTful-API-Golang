@@ -18,11 +18,6 @@ A production-ready Blog REST API built with Go standard library (net/http), feat
 10. [API Documentation](#api-documentation)
 11. [Pagination](#pagination)
 12. [Error Handling](#error-handling)
-13. [Request/Response Format](#requestresponse-format)
-14. [Code Examples](#code-examples)
-15. [Development Guidelines](#development-guidelines)
-16. [Troubleshooting](#troubleshooting)
-17. [Future Enhancements](#future-enhancements)
 
 ---
 
